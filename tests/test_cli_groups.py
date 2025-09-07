@@ -37,11 +37,11 @@ def test_cli_creates_study_groups(tmp_path):
         assert len(study.groups) == 2
 
         # verify primary outcome data attached to groups
-        po = study.groups[0].data["primary_outcome"]
-        assert po["name"] == "IL6"
-        assert po["value"] == 2.4
-        assert po["value_type"] == "mean"
-        assert po["dispersion"] == 1.6
-        assert po["dispersion_type"] == "sd"
-        assert po["unit"] == "pg/mL"
-        assert po["method"] == "ELISA"
+        group = study.groups[0]
+        assert group.primary_outcome.name == "IL6"
+        assert group.primary_outcome_value == 2.4
+        assert group.primary_outcome_value_type == "mean"
+        assert group.primary_outcome_dispersion == 1.6
+        assert group.primary_outcome_dispersion_type == "sd"
+        assert group.primary_outcome.unit == "pg/mL"
+        assert group.primary_outcome.method == "ELISA"

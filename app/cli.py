@@ -305,7 +305,9 @@ def init_app(app) -> None:
         _import_data(frames, dry_run, replace)
 
     @app.cli.command("raw-to-studies")
-    @click.option("--replace", is_flag=True, help="Clear existing studies before creation")
+    @click.option(
+        "--replace", is_flag=True, help="Clear existing studies before creation"
+    )
     def raw_to_studies_cmd(replace: bool) -> None:
         """Create :class:`Study` objects from stored :class:`RawRecord` data."""
 
@@ -318,7 +320,10 @@ def init_app(app) -> None:
         objects: list[Study] = []
         for rec in records:
             data = rec.data
-            title = data.get("ID") or f"{data.get('First author', 'Unknown')} {data.get('Year', '')}".strip()
+            title = (
+                data.get("ID")
+                or f"{data.get('First author', 'Unknown')} {data.get('Year', '')}".strip()
+            )
             if title in seen or Study.query.filter_by(title=title).first():
                 continue
             seen.add(title)
@@ -341,7 +346,9 @@ def init_app(app) -> None:
         click.echo(f"Created {len(objects)} studies from raw records.")
 
     @app.cli.command("raw-to-groups")
-    @click.option("--replace", is_flag=True, help="Clear existing study groups before creation")
+    @click.option(
+        "--replace", is_flag=True, help="Clear existing study groups before creation"
+    )
     def raw_to_groups_cmd(replace: bool) -> None:
         """Create :class:`StudyGroup` objects from raw records."""
 
@@ -357,27 +364,56 @@ def init_app(app) -> None:
             study = Study.query.filter_by(title=data.get("ID")).first()
             if not study:
                 continue
-            group_data = {field: data.get(field) for field in GROUP_FIELDS}
+            group_vals = {field: data.get(field) for field in GROUP_FIELDS}
             # Extract primary outcome information (cytokine concentrations)
             central, dispersion = _parse_measurement_desc(
                 data.get("Cytokine conecentration mean-SD / median-IQR")
             )
-            primary_outcome = {
-                "name": data.get("Cytokine"),
-                "value": data.get("Cytokine contrentration mean / median"),
-                "value_type": central,
-                "dispersion": data.get("Cytokine concentration SD / IQR"),
-                "dispersion_type": dispersion,
-                "unit": data.get("Cytokine unit"),
-                "method": data.get("Method of measurement"),
-            }
-            group_data["primary_outcome"] = primary_outcome
+            po_name = data.get("Cytokine")
+            po_unit = data.get("Cytokine unit")
+            po_method = data.get("Method of measurement")
+            outcome = Outcome.query.filter_by(
+                study_id=study.id, name=po_name, unit=po_unit, method=po_method
+            ).first()
+            if not outcome:
+                outcome = Outcome(
+                    study_id=study.id, name=po_name, unit=po_unit, method=po_method
+                )
+                db.session.add(outcome)
+                db.session.flush()
 
-            key = (study.id, tuple((f, group_data.get(f)) for f in GROUP_FIELDS))
+            key = (study.id, tuple((f, group_vals.get(f)) for f in GROUP_FIELDS))
             if key in seen:
                 continue
             seen.add(key)
-            group = StudyGroup(study_id=study.id, data=group_data)
+            group = StudyGroup(
+                study_id=study.id,
+                n=group_vals.get("n"),
+                age_mean_median=group_vals.get("Age (mean / median)"),
+                age_sd_iqr=group_vals.get("Age (SD / IQR)"),
+                age_mean_sd_median_iqr=group_vals.get("Age mean-SD / median-IQR"),
+                percent_males=group_vals.get("% Males"),
+                ethnicity=group_vals.get("Ethicity"),
+                description=group_vals.get(
+                    "Group description (MCI / DCM / Healthy / …)"
+                ),
+                other_info=group_vals.get("Other important group infomation"),
+                inflammation_excluded_by_emb=group_vals.get(
+                    "Inflammation excluded by EMB"
+                ),
+                cad_excluded=group_vals.get("CAD excluded"),
+                other_causes=group_vals.get(
+                    "Other possible causes of MCI / DCM (drugs, SARS-CoV-2…)"
+                ),
+                disease_confirmation=group_vals.get(
+                    "Description of disease comfirmation"
+                ),
+                primary_outcome_id=outcome.id,
+                primary_outcome_value=data.get("Cytokine contrentration mean / median"),
+                primary_outcome_value_type=central,
+                primary_outcome_dispersion=data.get("Cytokine concentration SD / IQR"),
+                primary_outcome_dispersion_type=dispersion,
+            )
             db.session.add(group)
             created += 1
 
