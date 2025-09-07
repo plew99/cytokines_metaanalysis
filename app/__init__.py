@@ -31,6 +31,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
 
+
     # Blueprints
     from .blueprints.core import bp as core_bp
 
@@ -40,5 +41,8 @@ def create_app():
     @app.get("/healthz")
     def healthz():
         return {"status": "ok"}, 200
+
+    with app.app_context():
+        db.create_all()
 
     return app
