@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+{% block title %}Studies{% endblock %}
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between">
+    <h1 class="h3 mb-3">Studies</h1>
+  </div>
+  {% if studies %}
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">First author</th>
+          <th scope="col">Year</th>
+          <th scope="col">Country</th>
+          <th scope="col">Study type</th>
+          <th scope="col">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for study in studies %}
+          <tr>
+            <td>{{ study.study_id }}</td>
+            <td>{{ study.first_author }}</td>
+            <td>{{ study.publication_year }}</td>
+            <td>{{ study.country }}</td>
+            <td>{{ study.study_design }}</td>
+            <td>{{ study.notes }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="text-secondary">No studies found.</p>
+  {% endif %}
+{% endblock %}
+
