@@ -19,6 +19,5 @@ htmlcov/
 
 # OS
 Thumbs.db
-!
-data/.gitkeep
+!data/.gitkeep
 !instance/.gitkeep

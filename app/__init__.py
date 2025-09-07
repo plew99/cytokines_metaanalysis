@@ -2,9 +2,12 @@
 import os
 from flask import Flask
 from dotenv import load_dotenv
+from flask_sqlalchemy import SQLAlchemy
 
 from .config import get_config
 from .extensions import db, migrate, login_manager
+
+db = SQLAlchemy()
 
 def create_app():
     """Application factory pattern."""
@@ -22,3 +25,4 @@ def create_app():
     app.register_blueprint(core_bp)
 
     return app
+
