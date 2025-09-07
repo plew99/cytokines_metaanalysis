@@ -29,6 +29,7 @@ This document lists the database tables and their fields.
 - **unit** (`String`): Measurement unit.
 - **direction** (`String`): Direction of effect.
 - **domain** (`String`): Outcome domain.
+- **method** (`String`): Measurement technique.
 
 ## Effect
 - **id** (`Integer`): Primary key.

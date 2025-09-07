@@ -7,6 +7,7 @@ from typing import Any, Iterable
 
 import click
 import pandas as pd
+from sqlalchemy import inspect, text
 
 from .extensions import db
 from .models import (
@@ -353,6 +354,11 @@ def init_app(app) -> None:
         """Create :class:`StudyGroup` objects from raw records."""
 
         db.create_all()
+        inspector = inspect(db.engine)
+        outcome_cols = [col["name"] for col in inspector.get_columns("outcome")]
+        if "method" not in outcome_cols:
+            with db.engine.begin() as conn:
+                conn.execute(text("ALTER TABLE outcome ADD COLUMN method VARCHAR(255)"))
         if replace:
             db.session.query(StudyGroup).delete()
 
