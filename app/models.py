@@ -137,11 +137,17 @@ def import_cohorts_from_csv(path: str) -> List[Cohort]:
             row.pop("id", None)
 
             for field in int_fields:
-                if row.get(field):
-                    row[field] = int(row[field])
+                value = row.get(field)
+                if value is None or value.strip() == "":
+                    row[field] = None
+                else:
+                    row[field] = int(value)
             for field in float_fields:
-                if row.get(field):
-                    row[field] = float(row[field])
+                value = row.get(field)
+                if value is None or value.strip() == "":
+                    row[field] = None
+                else:
+                    row[field] = float(value)
             for field in bool_fields:
                 row[field] = _parse_bool(row.get(field))
 
