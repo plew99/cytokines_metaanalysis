@@ -38,17 +38,19 @@ def test_cli_creates_study_groups(tmp_path):
         study = Study.query.filter_by(title="M00022").first()
         assert len(study.groups) == 2
 
-        # verify primary outcome data attached to groups
+        # verify outcome data attached to groups
         group = study.groups[0]
-        assert group.primary_outcome.name == "IL6"
-        assert group.primary_outcome_value == 2.4
-        assert group.primary_outcome_value_type == "mean"
-        assert group.primary_outcome_dispersion == 1.6
-        assert group.primary_outcome_dispersion_type == "sd"
-        assert group.primary_outcome.unit == "pg/mL"
-        assert group.primary_outcome.method == "ELISA"
+        go = group.outcomes[0]
+        assert go.outcome.name == "IL6"
+        assert go.value == 2.4
+        assert go.value_type == "mean"
+        assert go.dispersion == 1.6
+        assert go.dispersion_type == "sd"
+        assert go.outcome.unit == "pg/mL"
+        assert go.outcome.method == "ELISA"
 
         # second group values parsed from comma/range formatted strings
         group2 = StudyGroup.query.filter_by(study_id=study.id, n=15).first()
-        assert group2.primary_outcome_value == 5.1
-        assert group2.primary_outcome_dispersion == 28.5
+        go2 = group2.outcomes[0]
+        assert go2.value == 5.1
+        assert go2.dispersion == 28.5

@@ -15,6 +15,7 @@ from .models import (
     Arm,
     Covariate,
     Effect,
+    GroupOutcome,
     Outcome,
     RawRecord,
     Study,
@@ -46,16 +47,6 @@ GROUP_FIELDS: list[str] = [
     "CAD excluded",
     "Other possible causes of MCI / DCM (drugs, SARS-CoV-2…)",
     "Description of disease comfirmation",
-]
-
-# Raw column names that contain primary cytokine outcome information
-PRIMARY_OUTCOME_FIELDS: list[str] = [
-    "Cytokine",
-    "Method of measurement",
-    "Cytokine contrentration mean / median",
-    "Cytokine concentration SD / IQR",
-    "Cytokine conecentration mean-SD / median-IQR",
-    "Cytokine unit",
 ]
 
 
@@ -435,17 +426,24 @@ def init_app(app) -> None:
                 disease_confirmation=group_vals.get(
                     "Description of disease comfirmation"
                 ),
-                primary_outcome_id=outcome.id,
-                primary_outcome_value=_parse_float(
-                    data.get("Cytokine contrentration mean / median"), take="first"
-                ),
-                primary_outcome_value_type=central,
-                primary_outcome_dispersion=_parse_float(
-                    data.get("Cytokine concentration SD / IQR"), take="last"
-                ),
-                primary_outcome_dispersion_type=dispersion,
             )
             db.session.add(group)
+            db.session.flush()
+
+            db.session.add(
+                GroupOutcome(
+                    group_id=group.id,
+                    outcome_id=outcome.id,
+                    value=_parse_float(
+                        data.get("Cytokine contrentration mean / median"), take="first"
+                    ),
+                    value_type=central,
+                    dispersion=_parse_float(
+                        data.get("Cytokine concentration SD / IQR"), take="last"
+                    ),
+                    dispersion_type=dispersion,
+                )
+            )
             created += 1
 
         if created == 0:
