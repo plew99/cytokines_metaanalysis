@@ -47,6 +47,7 @@ def test_cli_creates_study_groups(tmp_path):
         assert go.dispersion == 1.6
         assert go.dispersion_type == "sd"
         assert go.outcome.unit == "pg/mL"
+        assert go.unit == "pg/mL"
         assert go.outcome.method == "ELISA"
 
         # second group values parsed from comma/range formatted strings

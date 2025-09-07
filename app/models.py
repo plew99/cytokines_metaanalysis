@@ -139,17 +139,7 @@ class StudyGroup(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     study_id: Mapped[int] = mapped_column(db.ForeignKey("study.id"), index=True)
     n: Mapped[int | None] = mapped_column(db.Integer)
-    age_mean_median: Mapped[str | None] = mapped_column(db.String(255))
-    age_sd_iqr: Mapped[str | None] = mapped_column(db.String(255))
-    age_mean_sd_median_iqr: Mapped[str | None] = mapped_column(db.String(255))
-    percent_males: Mapped[float | None] = mapped_column(db.Float)
-    ethnicity: Mapped[str | None] = mapped_column(db.String(255))
     description: Mapped[str | None] = mapped_column(db.String(255))
-    other_info: Mapped[str | None] = mapped_column(db.String(255))
-    inflammation_excluded_by_emb: Mapped[str | None] = mapped_column(db.String(255))
-    cad_excluded: Mapped[str | None] = mapped_column(db.String(255))
-    other_causes: Mapped[str | None] = mapped_column(db.String(255))
-    disease_confirmation: Mapped[str | None] = mapped_column(db.String(255))
 
     study: Mapped[Study] = relationship(back_populates="groups")
     outcomes: Mapped[list["GroupOutcome"]] = relationship(back_populates="group")
@@ -159,17 +149,7 @@ class StudyGroup(db.Model):
         """Return a dict representation similar to the old JSON column."""
         return {
             "n": self.n,
-            "Age (mean / median)": self.age_mean_median,
-            "Age (SD / IQR)": self.age_sd_iqr,
-            "Age mean-SD / median-IQR": self.age_mean_sd_median_iqr,
-            "% Males": self.percent_males,
-            "Ethicity": self.ethnicity,
             "Group description (MCI / DCM / Healthy / …)": self.description,
-            "Other important group infomation": self.other_info,
-            "Inflammation excluded by EMB": self.inflammation_excluded_by_emb,
-            "CAD excluded": self.cad_excluded,
-            "Other possible causes of MCI / DCM (drugs, SARS-CoV-2…)": self.other_causes,
-            "Description of disease comfirmation": self.disease_confirmation,
             "outcomes": [
                 {
                     "name": go.outcome.name if go.outcome else None,
@@ -177,7 +157,8 @@ class StudyGroup(db.Model):
                     "value_type": go.value_type,
                     "dispersion": go.dispersion,
                     "dispersion_type": go.dispersion_type,
-                    "unit": go.outcome.unit if go.outcome else None,
+                    "data_type": go.data_type,
+                    "unit": go.unit,
                     "method": go.outcome.method if go.outcome else None,
                 }
                 for go in self.outcomes
@@ -197,6 +178,8 @@ class GroupOutcome(db.Model):
     value_type: Mapped[str | None] = mapped_column(db.String(16))
     dispersion: Mapped[float | None] = mapped_column(db.Float)
     dispersion_type: Mapped[str | None] = mapped_column(db.String(16))
+    data_type: Mapped[str | None] = mapped_column(db.String(16))
+    unit: Mapped[str | None] = mapped_column(db.String(64))
 
     group: Mapped[StudyGroup] = relationship(back_populates="outcomes")
     outcome: Mapped[Outcome] = relationship(back_populates="group_results")

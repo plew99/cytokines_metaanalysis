@@ -36,17 +36,7 @@ SHEET_MAP: dict[str, tuple[type, list[str]]] = {
 
 GROUP_FIELDS: list[str] = [
     "n",
-    "Age (mean / median)",
-    "Age (SD / IQR)",
-    "Age mean-SD / median-IQR",
-    "% Males",
-    "Ethicity",
     "Group description (MCI / DCM / Healthy / …)",
-    "Other important group infomation",
-    "Inflammation excluded by EMB",
-    "CAD excluded",
-    "Other possible causes of MCI / DCM (drugs, SARS-CoV-2…)",
-    "Description of disease comfirmation",
 ]
 
 
@@ -407,24 +397,8 @@ def init_app(app) -> None:
             group = StudyGroup(
                 study_id=study.id,
                 n=group_vals.get("n"),
-                age_mean_median=group_vals.get("Age (mean / median)"),
-                age_sd_iqr=group_vals.get("Age (SD / IQR)"),
-                age_mean_sd_median_iqr=group_vals.get("Age mean-SD / median-IQR"),
-                percent_males=group_vals.get("% Males"),
-                ethnicity=group_vals.get("Ethicity"),
                 description=group_vals.get(
                     "Group description (MCI / DCM / Healthy / …)"
-                ),
-                other_info=group_vals.get("Other important group infomation"),
-                inflammation_excluded_by_emb=group_vals.get(
-                    "Inflammation excluded by EMB"
-                ),
-                cad_excluded=group_vals.get("CAD excluded"),
-                other_causes=group_vals.get(
-                    "Other possible causes of MCI / DCM (drugs, SARS-CoV-2…)"
-                ),
-                disease_confirmation=group_vals.get(
-                    "Description of disease comfirmation"
                 ),
             )
             db.session.add(group)
@@ -442,6 +416,8 @@ def init_app(app) -> None:
                         data.get("Cytokine concentration SD / IQR"), take="last"
                     ),
                     dispersion_type=dispersion,
+                    unit=po_unit,
+                    data_type=None,
                 )
             )
             created += 1
