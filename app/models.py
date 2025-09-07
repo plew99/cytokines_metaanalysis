@@ -1,6 +1,7 @@
 """SQLAlchemy ORM models for meta-analysis database."""
 
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import CheckConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -154,3 +155,12 @@ class User(db.Model):
     email: Mapped[str] = mapped_column(db.String(255), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(db.String(255), nullable=False)
     role: Mapped[str] = mapped_column(db.String(64), nullable=False, default="user")
+
+
+class RawRecord(db.Model):
+    """Raw row data imported from the metaanalysis XLSX."""
+
+    __tablename__ = "raw_record"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    data: Mapped[dict[str, Any]] = mapped_column(db.JSON, nullable=False)

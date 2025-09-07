@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block title %}Raw Records{% endblock %}
+{% block content %}
+  <h1 class="h3 mb-3">Raw Records</h1>
+  {% for record in records %}
+    {% set invalid = record.data.get('_invalid', []) %}
+    <div class="mb-4">
+      <h2 class="h6">Record {{ record.id }}</h2>
+      <ul class="list-group">
+      {% for key, value in record.data.items() if key != '_invalid' %}
+        <li class="list-group-item{% if key in invalid %} text-danger{% endif %}">
+          <strong>{{ key }}:</strong> {{ value }}
+        </li>
+      {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <p class="text-muted">No records.</p>
+  {% endfor %}
+{% endblock %}

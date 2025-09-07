@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -5,7 +6,12 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from app.xlsx_parser import load_metaanalysis_xlsx
+os.environ["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+
+from app import create_app
+from app.extensions import db
+from app.models import RawRecord
+from app.xlsx_parser import import_metaanalysis_xlsx, load_metaanalysis_xlsx
 
 
 def _create_sample_xlsx(path):
@@ -81,6 +87,17 @@ def _create_sample_xlsx(path):
         pd.DataFrame().to_excel(writer, sheet_name="Arkusz2", index=False)
 
 
+def _create_invalid_xlsx(path):
+    data = {
+        "ID": ["M00022"],
+        "Year": ["20X3"],
+        "cMRI performed": ["maybe"],
+    }
+    df = pd.DataFrame(data)
+    with pd.ExcelWriter(path) as writer:
+        df.to_excel(writer, sheet_name="Arkusz1", index=False)
+
+
 def test_parser_handles_types_and_nulls(tmp_path):
     xlsx_path = tmp_path / "Metaanalysis data.xlsx"
     _create_sample_xlsx(xlsx_path)
@@ -99,3 +116,31 @@ def test_parser_handles_types_and_nulls(tmp_path):
     assert first["cMRI performed"] is False and second["cMRI performed"] is True
     # Floats parsed
     assert isinstance(second["Follow-up time (months)"], float)
+
+
+def test_import_persists_rows(tmp_path):
+    xlsx_path = tmp_path / "Metaanalysis data.xlsx"
+    _create_sample_xlsx(xlsx_path)
+
+    app = create_app()
+    app.config.update(TESTING=True)
+    with app.app_context():
+        db.create_all()
+        objects = import_metaanalysis_xlsx(xlsx_path)
+        assert RawRecord.query.count() == 2
+        assert objects[0].data["ID"] == "M00022"
+
+
+def test_invalid_values_are_flagged(tmp_path):
+    xlsx_path = tmp_path / "Invalid data.xlsx"
+    _create_invalid_xlsx(xlsx_path)
+
+    app = create_app()
+    app.config.update(TESTING=True)
+    with app.app_context():
+        db.create_all()
+        objects = import_metaanalysis_xlsx(xlsx_path)
+        rec = objects[0].data
+        assert rec["Year"] == "20X3"
+        assert rec["cMRI performed"] == "maybe"
+        assert set(rec["_invalid"]) == {"Year", "cMRI performed"}
