@@ -5,7 +5,6 @@ from flask import Flask
 from dotenv import load_dotenv
 
 from .config import get_config
-from .extensions import db, migrate, login_manager
 
 def create_app():
     """Application factory pattern."""
@@ -18,28 +17,9 @@ def create_app():
 
     app.config.from_object(get_config(env))
 
-    # Stabilize SQLite path
-    uri = app.config.get("SQLALCHEMY_DATABASE_URI", "").strip()
-    if not uri:
-        db_path = Path(app.instance_path) / "meta.sqlite3"
-        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
-    elif uri.startswith("sqlite:///") and not uri.startswith("sqlite:////") and ":memory:" not in uri:
-        rel = uri.replace("sqlite:///", "", 1)
-        db_path = Path(app.instance_path) / rel
-        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
-
-    # Initialize extensions
-    db.init_app(app)
-    migrate.init_app(app, db)
-    login_manager.init_app(app)
-
     # Blueprints
     from .blueprints.core import bp as core_bp
     app.register_blueprint(core_bp)
-
-    # CLI commands
-    from . import cli as cli_mod
-    cli_mod.init_app(app)
 
     # Simple healthcheck
     @app.get("/healthz")
