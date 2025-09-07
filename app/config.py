@@ -14,6 +14,7 @@ class BaseConfig:
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
+    TEMPLATES_AUTO_RELOAD = True
 
 
 class ProductionConfig(BaseConfig):
