@@ -11,8 +11,11 @@ from flask import (
 import os
 import tempfile
 
+from sqlalchemy.orm import joinedload
+
 from app.models import (
     Study,
+    Cohort,
     import_cohorts_from_csv,
     import_studies_from_csv,
 )
@@ -34,9 +37,35 @@ def index():
 
 @bp.get("/studies")
 def studies():
-    """List available studies."""
-    all_studies = Study.query.order_by(Study.publication_year.desc()).all()
-    return render_template("studies.html", studies=all_studies)
+    """List available studies with optional sorting."""
+    sort_key = request.args.get("sort", "publication_year")
+    direction = request.args.get("direction", "desc")
+    sort_options = {
+        "id": Study.id,
+        "study_id": Study.study_id,
+        "first_author": Study.first_author,
+        "publication_year": Study.publication_year,
+        "country": Study.country,
+        "study_design": Study.study_design,
+        "notes": Study.notes,
+    }
+    sort_col = sort_options.get(sort_key, Study.publication_year)
+    order_by = sort_col.asc() if direction == "asc" else sort_col.desc()
+    all_studies = (
+        Study.query.options(joinedload(Study.cohorts))
+        .order_by(order_by)
+        .all()
+    )
+    return render_template(
+        "studies.html", studies=all_studies, sort=sort_key, direction=direction
+    )
+
+
+@bp.get("/cohorts/<int:cohort_id>")
+def cohort_detail(cohort_id: int):
+    """Display details for a cohort."""
+    cohort = Cohort.query.get_or_404(cohort_id)
+    return render_template("cohort_detail.html", cohort=cohort)
 
 
 @bp.route("/import", methods=["GET", "POST"])

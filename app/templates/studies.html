@@ -8,13 +8,13 @@
     <table class="table table-striped">
       <thead>
         <tr>
-          <th scope="col">ID</th>
-          <th scope="col">Study ID</th>
-          <th scope="col">First author</th>
-          <th scope="col">Year</th>
-          <th scope="col">Country</th>
-          <th scope="col">Study type</th>
-          <th scope="col">Notes</th>
+          <th scope="col"><a href="{{ url_for('core.studies', sort='id', direction='asc' if sort != 'id' or direction == 'desc' else 'desc') }}">ID</a></th>
+          <th scope="col"><a href="{{ url_for('core.studies', sort='study_id', direction='asc' if sort != 'study_id' or direction == 'desc' else 'desc') }}">Study ID</a></th>
+          <th scope="col"><a href="{{ url_for('core.studies', sort='first_author', direction='asc' if sort != 'first_author' or direction == 'desc' else 'desc') }}">First author</a></th>
+          <th scope="col"><a href="{{ url_for('core.studies', sort='publication_year', direction='asc' if sort != 'publication_year' or direction == 'desc' else 'desc') }}">Year</a></th>
+          <th scope="col"><a href="{{ url_for('core.studies', sort='country', direction='asc' if sort != 'country' or direction == 'desc' else 'desc') }}">Country</a></th>
+          <th scope="col"><a href="{{ url_for('core.studies', sort='study_design', direction='asc' if sort != 'study_design' or direction == 'desc' else 'desc') }}">Study type</a></th>
+          <th scope="col"><a href="{{ url_for('core.studies', sort='notes', direction='asc' if sort != 'notes' or direction == 'desc' else 'desc') }}">Notes</a></th>
         </tr>
       </thead>
       <tbody>
@@ -28,6 +28,17 @@
             <td>{{ study.study_design }}</td>
             <td>{{ study.notes }}</td>
           </tr>
+          {% if study.cohorts %}
+            <tr>
+              <td colspan="7">
+                <ul class="mb-0">
+                  {% for cohort in study.cohorts %}
+                    <li><a href="{{ url_for('core.cohort_detail', cohort_id=cohort.cohort_id) }}">{{ cohort.cohort_label }}</a></li>
+                  {% endfor %}
+                </ul>
+              </td>
+            </tr>
+          {% endif %}
         {% endfor %}
       </tbody>
     </table>
