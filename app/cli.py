@@ -134,6 +134,11 @@ def _import_data(frames: dict[str, pd.DataFrame], dry_run: bool, replace: bool) 
         db.session.rollback()
         return
 
+    if not objects:
+        click.echo("No data found to import. Check sheet names and required fields.")
+        db.session.rollback()
+        return
+
     if dry_run:
         click.echo("Dry run successful. No data committed.")
         db.session.rollback()
