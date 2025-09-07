@@ -24,6 +24,7 @@ def _create_sample_xlsx(path):
             "RCT - mean value after treatment",
             "Observational study",
         ],
+        "Date": [pd.Timestamp("2024-01-01"), pd.Timestamp("2024-02-01")],
         "n": [30, 80],
         "Age (mean / median)": [58.4, 51],
         "Age (SD / IQR)": [11.85, 12.2],
@@ -116,6 +117,8 @@ def test_parser_handles_types_and_nulls(tmp_path):
     assert first["cMRI performed"] is False and second["cMRI performed"] is True
     # Floats parsed
     assert isinstance(second["Follow-up time (months)"], float)
+    # Datetimes converted to ISO strings
+    assert first["Date"] == "2024-01-01T00:00:00"
 
 
 def test_import_persists_rows(tmp_path):
