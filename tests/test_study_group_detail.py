@@ -21,7 +21,8 @@ def test_study_group_detail_route():
         db.session.commit()
         group = StudyGroup(
             study_id=study.id,
-            data={"Group description (MCI / DCM / Healthy / …)": "Group A", "n": 10},
+            description="Group A",
+            n=10,
         )
         db.session.add(group)
         db.session.commit()

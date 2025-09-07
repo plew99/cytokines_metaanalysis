@@ -70,6 +70,7 @@ class Outcome(db.Model):
     unit: Mapped[str | None] = mapped_column(db.String(64))
     direction: Mapped[str | None] = mapped_column(db.String(16))
     domain: Mapped[str | None] = mapped_column(db.String(64))
+    method: Mapped[str | None] = mapped_column(db.String(255))
 
     study: Mapped[Study] = relationship(back_populates="outcomes")
     effects: Mapped[list["Effect"]] = relationship(back_populates="outcome")
@@ -134,9 +135,57 @@ class StudyGroup(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     study_id: Mapped[int] = mapped_column(db.ForeignKey("study.id"), index=True)
-    data: Mapped[dict[str, Any]] = mapped_column(db.JSON, nullable=False)
+    n: Mapped[int | None] = mapped_column(db.Integer)
+    age_mean_median: Mapped[str | None] = mapped_column(db.String(255))
+    age_sd_iqr: Mapped[str | None] = mapped_column(db.String(255))
+    age_mean_sd_median_iqr: Mapped[str | None] = mapped_column(db.String(255))
+    percent_males: Mapped[float | None] = mapped_column(db.Float)
+    ethnicity: Mapped[str | None] = mapped_column(db.String(255))
+    description: Mapped[str | None] = mapped_column(db.String(255))
+    other_info: Mapped[str | None] = mapped_column(db.String(255))
+    inflammation_excluded_by_emb: Mapped[str | None] = mapped_column(db.String(255))
+    cad_excluded: Mapped[str | None] = mapped_column(db.String(255))
+    other_causes: Mapped[str | None] = mapped_column(db.String(255))
+    disease_confirmation: Mapped[str | None] = mapped_column(db.String(255))
+    primary_outcome_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey("outcome.id"), nullable=True
+    )
+    primary_outcome_value: Mapped[float | None] = mapped_column(db.Float)
+    primary_outcome_value_type: Mapped[str | None] = mapped_column(db.String(16))
+    primary_outcome_dispersion: Mapped[float | None] = mapped_column(db.Float)
+    primary_outcome_dispersion_type: Mapped[str | None] = mapped_column(db.String(16))
 
     study: Mapped[Study] = relationship(back_populates="groups")
+    primary_outcome: Mapped[Outcome | None] = relationship(
+        foreign_keys=[primary_outcome_id]
+    )
+
+    @property
+    def data(self) -> dict[str, Any]:
+        """Return a dict representation similar to the old JSON column."""
+        return {
+            "n": self.n,
+            "Age (mean / median)": self.age_mean_median,
+            "Age (SD / IQR)": self.age_sd_iqr,
+            "Age mean-SD / median-IQR": self.age_mean_sd_median_iqr,
+            "% Males": self.percent_males,
+            "Ethicity": self.ethnicity,
+            "Group description (MCI / DCM / Healthy / …)": self.description,
+            "Other important group infomation": self.other_info,
+            "Inflammation excluded by EMB": self.inflammation_excluded_by_emb,
+            "CAD excluded": self.cad_excluded,
+            "Other possible causes of MCI / DCM (drugs, SARS-CoV-2…)": self.other_causes,
+            "Description of disease comfirmation": self.disease_confirmation,
+            "primary_outcome": {
+                "name": self.primary_outcome.name if self.primary_outcome else None,
+                "value": self.primary_outcome_value,
+                "value_type": self.primary_outcome_value_type,
+                "dispersion": self.primary_outcome_dispersion,
+                "dispersion_type": self.primary_outcome_dispersion_type,
+                "unit": self.primary_outcome.unit if self.primary_outcome else None,
+                "method": self.primary_outcome.method if self.primary_outcome else None,
+            },
+        }
 
 
 study_tag = db.Table(
