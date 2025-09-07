@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block title %}met analiza cytokiny{% endblock %}
+{% block content %}
+  <h1 class="h3 mb-3">Badania</h1>
+  <ul class="list-group">
+  {% for study in studies %}
+    <li class="list-group-item">
+      {{ study.title }}{% if study.year %} ({{ study.year }}){% endif %}
+    </li>
+  {% else %}
+    <li class="list-group-item text-muted">Brak badań</li>
+  {% endfor %}
+  </ul>
+{% endblock %}
