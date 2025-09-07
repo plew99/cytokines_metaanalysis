@@ -45,7 +45,6 @@ def test_cli_creates_studies_from_raw_records(tmp_path):
         assert study.country == "Poland"
         assert study.design == "RCT - mean value after treatment"
 
-
 def test_cli_deduplicates_raw_records(tmp_path):
     xlsx_path = tmp_path / "Metaanalysis data.xlsx"
     _create_sample_xlsx(xlsx_path)
@@ -63,3 +62,4 @@ def test_cli_deduplicates_raw_records(tmp_path):
         result = runner.invoke(args=["raw-to-studies"])
         assert result.exit_code == 0
         assert Study.query.count() == 2
+
