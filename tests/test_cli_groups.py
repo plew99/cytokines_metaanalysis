@@ -35,3 +35,13 @@ def test_cli_creates_study_groups(tmp_path):
         assert StudyGroup.query.count() == 3
         study = Study.query.filter_by(title="M00022").first()
         assert len(study.groups) == 2
+
+        # verify primary outcome data attached to groups
+        po = study.groups[0].data["primary_outcome"]
+        assert po["name"] == "IL6"
+        assert po["value"] == 2.4
+        assert po["value_type"] == "mean"
+        assert po["dispersion"] == 1.6
+        assert po["dispersion_type"] == "sd"
+        assert po["unit"] == "pg/mL"
+        assert po["method"] == "ELISA"
