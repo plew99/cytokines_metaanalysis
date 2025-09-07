@@ -3,7 +3,7 @@
 from flask import flash, jsonify, redirect, render_template, url_for
 
 from ... import db
-from ...models import RawRecord, Study
+from ...models import RawRecord, Study, StudyGroup
 from ...forms import StudyForm
 
 from . import bp
@@ -53,3 +53,10 @@ def raw_records_list():
 
     records = RawRecord.query.all()
     return render_template("raw_records/index.html", records=records)
+
+
+@bp.get("/studies/<int:study_id>/groups/<int:group_id>")
+def study_group_detail(study_id: int, group_id: int):
+    """Display details for a single study group."""
+    group = StudyGroup.query.filter_by(id=group_id, study_id=study_id).first_or_404()
+    return render_template("study_groups/detail.html", group=group)
