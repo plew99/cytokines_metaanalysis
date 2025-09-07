@@ -7,6 +7,7 @@ from typing import Any, Iterable
 
 import click
 import pandas as pd
+import re
 from sqlalchemy import inspect, text
 
 from .extensions import db
@@ -105,6 +106,26 @@ def _parse_measurement_desc(desc: Any) -> tuple[str, str]:
     else:
         dispersion = "unknown"
     return central, dispersion
+
+
+def _parse_float(value: Any, *, take: str = "last") -> float | None:
+    """Parse a float from ``value`` handling commas and ranges.
+
+    If ``value`` contains multiple numbers (e.g. ``"0,49-28,50"``), the
+    first or last number can be selected via ``take``.
+    """
+
+    if value in (None, ""):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        cleaned = value.replace(",", ".")
+        numbers = re.findall(r"\d+(?:\.\d+)?", cleaned)
+        if not numbers:
+            return None
+        return float(numbers[0]) if take == "first" else float(numbers[-1])
+    return None
 
 
 def _validate_record(rec: dict[str, Any], required: list[str]) -> list[tuple[str, str]]:
@@ -415,9 +436,13 @@ def init_app(app) -> None:
                     "Description of disease comfirmation"
                 ),
                 primary_outcome_id=outcome.id,
-                primary_outcome_value=data.get("Cytokine contrentration mean / median"),
+                primary_outcome_value=_parse_float(
+                    data.get("Cytokine contrentration mean / median"), take="first"
+                ),
                 primary_outcome_value_type=central,
-                primary_outcome_dispersion=data.get("Cytokine concentration SD / IQR"),
+                primary_outcome_dispersion=_parse_float(
+                    data.get("Cytokine concentration SD / IQR"), take="last"
+                ),
                 primary_outcome_dispersion_type=dispersion,
             )
             db.session.add(group)

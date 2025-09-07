@@ -27,6 +27,8 @@ def test_cli_creates_study_groups(tmp_path):
         first = RawRecord.query.first()
         data2 = dict(first.data)
         data2["n"] = 15
+        data2["Cytokine contrentration mean / median"] = "5,1"
+        data2["Cytokine concentration SD / IQR"] = "0,49-28,50"
         db.session.add(RawRecord(data=data2))
         db.session.commit()
 
@@ -45,3 +47,8 @@ def test_cli_creates_study_groups(tmp_path):
         assert group.primary_outcome_dispersion_type == "sd"
         assert group.primary_outcome.unit == "pg/mL"
         assert group.primary_outcome.method == "ELISA"
+
+        # second group values parsed from comma/range formatted strings
+        group2 = StudyGroup.query.filter_by(study_id=study.id, n=15).first()
+        assert group2.primary_outcome_value == 5.1
+        assert group2.primary_outcome_dispersion == 28.5
