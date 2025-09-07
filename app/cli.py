@@ -9,7 +9,8 @@ import click
 import pandas as pd
 
 from .extensions import db
-from .models import Arm, Covariate, Effect, Outcome, Study, Tag
+from .models import Arm, Covariate, Effect, Outcome, RawRecord, Study, Tag
+from .xlsx_parser import load_metaanalysis_xlsx
 
 # Mapping of sheet names to models and required fields
 SHEET_MAP: dict[str, tuple[type, list[str]]] = {
@@ -170,6 +171,27 @@ def init_app(app) -> None:
         click.echo(f"Workbook contains sheets: {', '.join(xls.sheet_names)}")
         # Match sheet names case-insensitively to be tolerant of user provided workbooks
         sheet_lookup = {name.strip().lower(): name for name in xls.sheet_names}
+        # Special handling for metaanalysis workbook with single "Arkusz1" sheet
+        arkusz_key = "arkusz1"
+        if arkusz_key in sheet_lookup and not any(
+            s.lower() in sheet_lookup for s in SHEET_MAP
+        ):
+            records = load_metaanalysis_xlsx(path)
+            click.echo(
+                f"Loaded sheet '{sheet_lookup[arkusz_key]}' with {len(records)} rows"
+            )
+            if dry_run:
+                click.echo("Dry run complete. No data persisted.")
+                return
+            if replace:
+                db.session.query(RawRecord).delete()
+            objects = [RawRecord(data=rec) for rec in records]
+            db.session.add_all(objects)
+            db.session.commit()
+            click.echo(
+                f"Import completed successfully. Imported {len(objects)} objects."
+            )
+            return
         frames: dict[str, pd.DataFrame] = {}
         for sheet in SHEET_MAP:
             key = sheet.strip().lower()
