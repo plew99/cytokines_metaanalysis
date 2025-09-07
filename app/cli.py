@@ -159,7 +159,13 @@ def init_app(app) -> None:
     def import_xlsx_cmd(path: str, dry_run: bool, replace: bool) -> None:
         """Import data from an XLSX workbook."""
         xls = pd.ExcelFile(path)
-        frames = {sheet: xls.parse(sheet) for sheet in SHEET_MAP if sheet in xls.sheet_names}
+        # Match sheet names case-insensitively to be tolerant of user provided workbooks
+        sheet_lookup = {name.strip().lower(): name for name in xls.sheet_names}
+        frames: dict[str, pd.DataFrame] = {}
+        for sheet in SHEET_MAP:
+            key = sheet.strip().lower()
+            if key in sheet_lookup:
+                frames[sheet] = xls.parse(sheet_lookup[key])
         _import_data(frames, dry_run, replace)
 
     @app.cli.command("import-csv")
