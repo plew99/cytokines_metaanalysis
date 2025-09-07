@@ -83,3 +83,33 @@ def test_import_cohorts_handles_blank_numeric_values(tmp_path):
         db.session.remove()
         db.drop_all()
         db.engine.dispose()
+
+
+def test_import_cohorts_handles_blank_summary_type(tmp_path):
+    app = setup_app()
+    with app.app_context():
+        db.create_all()
+        study_csv = tmp_path / "studies.csv"
+        with study_csv.open("w", newline="") as fh:
+            writer = csv.writer(fh)
+            writer.writerow([
+                "study_id",
+                "first_author",
+                "publication_year",
+                "country",
+                "study_design",
+                "notes",
+            ])
+            writer.writerow(["T3", "Smith", "2020", "USA", "RCT", "note1"])
+        import_studies_from_csv(str(study_csv))
+        cohort_csv = tmp_path / "cohorts.csv"
+        with cohort_csv.open("w", newline="") as fh:
+            writer = csv.writer(fh)
+            writer.writerow(["study_id", "cohort_label", "lvedd_summary_type"])
+            writer.writerow(["T3", "Control", ""])
+        import_cohorts_from_csv(str(cohort_csv))
+        cohort = Cohort.query.first()
+        assert cohort.lvedd_summary_type is None
+        db.session.remove()
+        db.drop_all()
+        db.engine.dispose()

@@ -81,6 +81,25 @@ def _parse_bool(value: str | None) -> bool | None:
     return value.strip().lower() in {"1", "true", "t", "yes", "y"}
 
 
+_SUMMARY_TYPES = {"mean_sd", "median_iqr"}
+
+
+def _parse_summary_type(value: str | None) -> str | None:
+    """Validate summary type enums used by :class:`Cohort`.
+
+    Empty strings or unrecognised values are converted to ``None`` so that the
+    database stores ``NULL`` and SQLAlchemy's Enum type does not raise errors
+    when reading the row back.
+    """
+
+    if value is None:
+        return None
+    value = value.strip()
+    if value == "":
+        return None
+    return value if value in _SUMMARY_TYPES else None
+
+
 def import_studies_from_csv(path: str) -> List[Study]:
     """Import studies from a CSV file.
 
@@ -129,6 +148,11 @@ def import_cohorts_from_csv(path: str) -> List[Cohort]:
         "emb_performed",
         "cmr_performed",
     }
+    summary_fields = {
+        "age_summary_type",
+        "lvef_summary_type",
+        "lvedd_summary_type",
+    }
 
     with open(path, newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
@@ -150,6 +174,8 @@ def import_cohorts_from_csv(path: str) -> List[Cohort]:
                     row[field] = float(value)
             for field in bool_fields:
                 row[field] = _parse_bool(row.get(field))
+            for field in summary_fields:
+                row[field] = _parse_summary_type(row.get(field))
 
             cohort = Cohort(**row)
             db.session.add(cohort)
