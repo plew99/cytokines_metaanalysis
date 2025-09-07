@@ -5,7 +5,7 @@
   <ul class="list-group">
   {% for study in studies %}
     <li class="list-group-item">
-      {{ study.title }}{% if study.year %} ({{ study.year }}){% endif %}
+      {{ study.title }} - {{ study.authors_text }} et al.{% if study.year %} ({{ study.year }}){% endif %}
     </li>
   {% else %}
     <li class="list-group-item text-muted">Brak badań</li>
