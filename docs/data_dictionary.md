@@ -59,17 +59,7 @@ This document lists the database tables and their fields.
 - **id** (`Integer`): Primary key.
 - **study_id** (`Integer`, FK): Related study.
 - **n** (`Integer`): Sample size.
-- **age_mean_median** (`String`): Age (mean or median).
-- **age_sd_iqr** (`String`): Age dispersion (SD or IQR).
-- **age_mean_sd_median_iqr** (`String`): Combined age descriptor.
-- **percent_males** (`Float`): Percentage of males.
-- **ethnicity** (`String`): Ethnicity.
 - **description** (`String`): Group description.
-- **other_info** (`String`): Additional information.
-- **inflammation_excluded_by_emb** (`String`): Inflammation exclusion method.
-- **cad_excluded** (`String`): CAD excluded.
-- **other_causes** (`String`): Other possible causes.
-- **disease_confirmation** (`String`): Disease confirmation description.
 
 ## GroupOutcome
 - **id** (`Integer`): Primary key.
@@ -79,6 +69,8 @@ This document lists the database tables and their fields.
 - **value_type** (`String`): Central tendency type.
 - **dispersion** (`Float`): Dispersion value.
 - **dispersion_type** (`String`): Dispersion type.
+- **data_type** (`String`): Type of data.
+- **unit** (`String`): Measurement unit.
 
 ## Tag
 - **id** (`Integer`): Primary key.
