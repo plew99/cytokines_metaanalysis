@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block title %}Cohort {{ cohort.cohort_label }}{% endblock %}
+{% block content %}
+  <h1 class="h3 mb-3">Cohort: {{ cohort.cohort_label }}</h1>
+  <dl class="row">
+    <dt class="col-sm-3">Study ID</dt>
+    <dd class="col-sm-9">{{ cohort.study_id }}</dd>
+    <dt class="col-sm-3">Notes</dt>
+    <dd class="col-sm-9">{{ cohort.cohort_notes or '' }}</dd>
+    <dt class="col-sm-3">Sample size</dt>
+    <dd class="col-sm-9">{{ cohort.sample_size or 'N/A' }}</dd>
+  </dl>
+  <a href="{{ url_for('core.studies') }}">Back to studies</a>
+{% endblock %}
