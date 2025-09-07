@@ -46,6 +46,16 @@ GROUP_FIELDS: list[str] = [
     "Description of disease comfirmation",
 ]
 
+# Raw column names that contain primary cytokine outcome information
+PRIMARY_OUTCOME_FIELDS: list[str] = [
+    "Cytokine",
+    "Method of measurement",
+    "Cytokine contrentration mean / median",
+    "Cytokine concentration SD / IQR",
+    "Cytokine conecentration mean-SD / median-IQR",
+    "Cytokine unit",
+]
+
 
 # ---------------------------------------------------------------------------
 # Helper functions
@@ -55,6 +65,45 @@ GROUP_FIELDS: list[str] = [
 def _clean_record(rec: dict[str, Any]) -> dict[str, Any]:
     """Replace NaN with None for database compatibility."""
     return {k: (None if pd.isna(v) else v) for k, v in rec.items()}
+
+
+def _parse_measurement_desc(desc: Any) -> tuple[str, str]:
+    """Return central tendency and dispersion types from a descriptor string.
+
+    Parameters
+    ----------
+    desc:
+        The descriptor string, e.g. ``"Mean±SD"`` or ``"Median (IQR)"``.
+
+    Returns
+    -------
+    tuple[str, str]
+        ``(central_type, dispersion_type)`` where each element is one of
+        ``"mean"``, ``"median"``, ``"sd"``, ``"iqr"``, ``"p25-75"``,
+        ``"min-max"`` or ``"unknown"``.
+    """
+
+    if not isinstance(desc, str):
+        return "unknown", "unknown"
+    text = desc.lower()
+    if "mean" in text:
+        central = "mean"
+    elif "median" in text:
+        central = "median"
+    else:
+        central = "unknown"
+
+    if "sd" in text:
+        dispersion = "sd"
+    elif "iqr" in text:
+        dispersion = "iqr"
+    elif "25" in text and "75" in text:
+        dispersion = "p25-75"
+    elif "min" in text and "max" in text:
+        dispersion = "min-max"
+    else:
+        dispersion = "unknown"
+    return central, dispersion
 
 
 def _validate_record(rec: dict[str, Any], required: list[str]) -> list[tuple[str, str]]:
@@ -309,6 +358,21 @@ def init_app(app) -> None:
             if not study:
                 continue
             group_data = {field: data.get(field) for field in GROUP_FIELDS}
+            # Extract primary outcome information (cytokine concentrations)
+            central, dispersion = _parse_measurement_desc(
+                data.get("Cytokine conecentration mean-SD / median-IQR")
+            )
+            primary_outcome = {
+                "name": data.get("Cytokine"),
+                "value": data.get("Cytokine contrentration mean / median"),
+                "value_type": central,
+                "dispersion": data.get("Cytokine concentration SD / IQR"),
+                "dispersion_type": dispersion,
+                "unit": data.get("Cytokine unit"),
+                "method": data.get("Method of measurement"),
+            }
+            group_data["primary_outcome"] = primary_outcome
+
             key = (study.id, tuple((f, group_data.get(f)) for f in GROUP_FIELDS))
             if key in seen:
                 continue

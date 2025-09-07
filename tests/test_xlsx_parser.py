@@ -41,6 +41,7 @@ def _create_sample_xlsx(path):
             "HF symptoms + Echo + ECG",
             "Echo + EMB",
         ],
+        "Cytokine": ["IL6", "TNF-alpha"],
         "Method of measurement": ["ELISA", ""],  # second row blank to test null
         "Cytokine contrentration mean / median": [2.4, 9.5],
         "Cytokine concentration SD / IQR": [1.6, 12.6],
@@ -107,6 +108,7 @@ def test_parser_handles_types_and_nulls(tmp_path):
     first, second = records
 
     assert isinstance(first["Year"], int) and first["Year"] == 2013
+    assert first["Cytokine"] == "IL6"
     assert first["Inflammation excluded by EMB"] is True
     assert second["Inflammation excluded by EMB"] is False
     # Column headers stripped of whitespace
