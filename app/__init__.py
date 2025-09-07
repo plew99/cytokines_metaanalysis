@@ -37,6 +37,10 @@ def create_app():
     from .blueprints.core import bp as core_bp
     app.register_blueprint(core_bp)
 
+    # CLI commands
+    from . import cli as cli_mod
+    cli_mod.init_app(app)
+
     # Simple healthcheck
     @app.get("/healthz")
     def healthz():
