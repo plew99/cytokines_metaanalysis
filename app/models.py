@@ -4,9 +4,27 @@ import csv
 from typing import List
 
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.types import String, TypeDecorator
 
 
 db = SQLAlchemy()
+
+
+class SummaryType(TypeDecorator):
+    """String column that normalises blank values to ``None``."""
+
+    impl = String(20)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):  # type: ignore[override]
+        if value is None or value == "":
+            return None
+        return value
+
+    def process_result_value(self, value, dialect):  # type: ignore[override]
+        if value is None or value == "":
+            return None
+        return value
 
 
 class Study(db.Model):
@@ -38,9 +56,7 @@ class Cohort(db.Model):
     sample_size = db.Column(db.Integer)
     age_central_value = db.Column(db.Float)
     age_dispersion_value = db.Column(db.Float)
-    age_summary_type = db.Column(
-        db.Enum("mean_sd", "median_iqr", name="age_summary_type")
-    )
+    age_summary_type = db.Column(SummaryType())
     percent_male = db.Column(db.Float)
     ethnicity = db.Column(db.String)
     inflammation_excluded_by_emb = db.Column(db.Boolean)
@@ -50,14 +66,10 @@ class Cohort(db.Model):
     nyha_summary = db.Column(db.String)
     lvef_percent_central = db.Column(db.Float)
     lvef_percent_dispersion = db.Column(db.Float)
-    lvef_summary_type = db.Column(
-        db.Enum("mean_sd", "median_iqr", name="lvef_summary_type")
-    )
+    lvef_summary_type = db.Column(SummaryType())
     lvedd_central = db.Column(db.Float)
     lvedd_dispersion = db.Column(db.Float)
-    lvedd_summary_type = db.Column(
-        db.Enum("mean_sd", "median_iqr", name="lvedd_summary_type")
-    )
+    lvedd_summary_type = db.Column(SummaryType())
     emb_performed = db.Column(db.Boolean)
     emb_criteria = db.Column(db.Text)
     emb_lymphocyte_density_per_mm2 = db.Column(db.Float)
