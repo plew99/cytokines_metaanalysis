@@ -55,6 +55,31 @@ This document lists the database tables and their fields.
 - **name** (`String`): Covariate name.
 - **value** (`String`): Covariate value.
 
+## StudyGroup
+- **id** (`Integer`): Primary key.
+- **study_id** (`Integer`, FK): Related study.
+- **n** (`Integer`): Sample size.
+- **age_mean_median** (`String`): Age (mean or median).
+- **age_sd_iqr** (`String`): Age dispersion (SD or IQR).
+- **age_mean_sd_median_iqr** (`String`): Combined age descriptor.
+- **percent_males** (`Float`): Percentage of males.
+- **ethnicity** (`String`): Ethnicity.
+- **description** (`String`): Group description.
+- **other_info** (`String`): Additional information.
+- **inflammation_excluded_by_emb** (`String`): Inflammation exclusion method.
+- **cad_excluded** (`String`): CAD excluded.
+- **other_causes** (`String`): Other possible causes.
+- **disease_confirmation** (`String`): Disease confirmation description.
+
+## GroupOutcome
+- **id** (`Integer`): Primary key.
+- **group_id** (`Integer`, FK): Related study group.
+- **outcome_id** (`Integer`, FK): Related outcome.
+- **value** (`Float`): Measured value.
+- **value_type** (`String`): Central tendency type.
+- **dispersion** (`Float`): Dispersion value.
+- **dispersion_type** (`String`): Dispersion type.
+
 ## Tag
 - **id** (`Integer`): Primary key.
 - **name** (`String`, unique): Tag name.

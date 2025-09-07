@@ -74,6 +74,9 @@ class Outcome(db.Model):
 
     study: Mapped[Study] = relationship(back_populates="outcomes")
     effects: Mapped[list["Effect"]] = relationship(back_populates="outcome")
+    group_results: Mapped[list["GroupOutcome"]] = relationship(
+        back_populates="outcome"
+    )
 
 
 class Effect(db.Model):
@@ -147,18 +150,9 @@ class StudyGroup(db.Model):
     cad_excluded: Mapped[str | None] = mapped_column(db.String(255))
     other_causes: Mapped[str | None] = mapped_column(db.String(255))
     disease_confirmation: Mapped[str | None] = mapped_column(db.String(255))
-    primary_outcome_id: Mapped[int | None] = mapped_column(
-        db.ForeignKey("outcome.id"), nullable=True
-    )
-    primary_outcome_value: Mapped[float | None] = mapped_column(db.Float)
-    primary_outcome_value_type: Mapped[str | None] = mapped_column(db.String(16))
-    primary_outcome_dispersion: Mapped[float | None] = mapped_column(db.Float)
-    primary_outcome_dispersion_type: Mapped[str | None] = mapped_column(db.String(16))
 
     study: Mapped[Study] = relationship(back_populates="groups")
-    primary_outcome: Mapped[Outcome | None] = relationship(
-        foreign_keys=[primary_outcome_id]
-    )
+    outcomes: Mapped[list["GroupOutcome"]] = relationship(back_populates="group")
 
     @property
     def data(self) -> dict[str, Any]:
@@ -176,16 +170,36 @@ class StudyGroup(db.Model):
             "CAD excluded": self.cad_excluded,
             "Other possible causes of MCI / DCM (drugs, SARS-CoV-2…)": self.other_causes,
             "Description of disease comfirmation": self.disease_confirmation,
-            "primary_outcome": {
-                "name": self.primary_outcome.name if self.primary_outcome else None,
-                "value": self.primary_outcome_value,
-                "value_type": self.primary_outcome_value_type,
-                "dispersion": self.primary_outcome_dispersion,
-                "dispersion_type": self.primary_outcome_dispersion_type,
-                "unit": self.primary_outcome.unit if self.primary_outcome else None,
-                "method": self.primary_outcome.method if self.primary_outcome else None,
-            },
+            "outcomes": [
+                {
+                    "name": go.outcome.name if go.outcome else None,
+                    "value": go.value,
+                    "value_type": go.value_type,
+                    "dispersion": go.dispersion,
+                    "dispersion_type": go.dispersion_type,
+                    "unit": go.outcome.unit if go.outcome else None,
+                    "method": go.outcome.method if go.outcome else None,
+                }
+                for go in self.outcomes
+            ],
         }
+
+
+class GroupOutcome(db.Model):
+    """Outcome measurement for a specific study group."""
+
+    __tablename__ = "group_outcome"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    group_id: Mapped[int] = mapped_column(db.ForeignKey("study_group.id"), index=True)
+    outcome_id: Mapped[int] = mapped_column(db.ForeignKey("outcome.id"), index=True)
+    value: Mapped[float | None] = mapped_column(db.Float)
+    value_type: Mapped[str | None] = mapped_column(db.String(16))
+    dispersion: Mapped[float | None] = mapped_column(db.Float)
+    dispersion_type: Mapped[str | None] = mapped_column(db.String(16))
+
+    group: Mapped[StudyGroup] = relationship(back_populates="outcomes")
+    outcome: Mapped[Outcome] = relationship(back_populates="group_results")
 
 
 study_tag = db.Table(
