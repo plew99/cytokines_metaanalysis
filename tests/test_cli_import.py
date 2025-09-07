@@ -25,3 +25,4 @@ def test_cli_import_handles_arkusz1(tmp_path):
         assert result.exit_code == 0
         assert "Loaded sheet 'Arkusz1' with 2 rows" in result.output
         assert RawRecord.query.count() == 2
+        assert RawRecord.query.first().data["Date"] == "2024-01-01T00:00:00"

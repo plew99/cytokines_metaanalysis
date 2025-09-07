@@ -17,6 +17,7 @@ Parsing rules implemented according to the specification provided:
 from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
+from datetime import datetime
 import pandas as pd
 
 if TYPE_CHECKING:
@@ -80,6 +81,16 @@ def _coerce_dtypes(frame: pd.DataFrame) -> pd.DataFrame:
     return frame
 
 
+def _convert_value(val: Any) -> Any:
+    """Return a JSON-serialisable representation of ``val``."""
+
+    if isinstance(val, (datetime, pd.Timestamp)):
+        return val.isoformat()
+    if hasattr(val, "item"):
+        return val.item()
+    return val
+
+
 def _frame_to_records(
     frame: pd.DataFrame, original: pd.DataFrame
 ) -> list[dict[str, Any]]:
@@ -106,17 +117,13 @@ def _frame_to_records(
                 else:
                     if pd.isna(val):
                         rec[col] = None
-                    elif hasattr(val, "item"):
-                        rec[col] = val.item()
                     else:
-                        rec[col] = val
+                        rec[col] = _convert_value(val)
             else:
                 if pd.isna(val):
                     rec[col] = None
-                elif hasattr(val, "item"):
-                    rec[col] = val.item()
                 else:
-                    rec[col] = val
+                    rec[col] = _convert_value(val)
         if invalid:
             rec["_invalid"] = invalid
         records.append(rec)
