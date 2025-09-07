@@ -9,6 +9,7 @@
       <thead>
         <tr>
           <th scope="col">ID</th>
+          <th scope="col">Study ID</th>
           <th scope="col">First author</th>
           <th scope="col">Year</th>
           <th scope="col">Country</th>
@@ -19,6 +20,7 @@
       <tbody>
         {% for study in studies %}
           <tr>
+            <td>{{ study.id }}</td>
             <td>{{ study.study_id }}</td>
             <td>{{ study.first_author }}</td>
             <td>{{ study.publication_year }}</td>

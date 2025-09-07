@@ -11,7 +11,8 @@ class Study(db.Model):
 
     __tablename__ = "studies"
 
-    study_id = db.Column(db.String, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    study_id = db.Column(db.String, unique=True, nullable=False)
     first_author = db.Column(db.String, nullable=False)
     publication_year = db.Column(db.Integer)
     country = db.Column(db.String)
