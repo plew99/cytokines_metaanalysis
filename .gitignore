@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+.env.*
+.DS_Store
+
+# Flask / instance data
+instance/
+data/
+notebooks/.ipynb_checkpoints/
+
+# Coverage / test
+.coverage
+htmlcov/
+.pytest_cache/
+
+# OS
+Thumbs.db
+!
+data/.gitkeep
+!instance/.gitkeep
