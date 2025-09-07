@@ -1,10 +1,11 @@
-from __future__ import annotations
-
 """Utilities for parsing the project's primary XLSX data file.
+
+from __future__ import annotations
 
 The workbook contains a single sheet named ``Arkusz1`` with 49 columns.
 This module exposes :func:`load_metaanalysis_xlsx` which loads the file
-and returns a list of dictionaries with properly typed values.
+and returns a list of dictionaries with properly typed values, as well as
+``import_metaanalysis_xlsx`` which persists the parsed rows to the database.
 
 Parsing rules implemented according to the specification provided:
 
@@ -14,9 +15,12 @@ Parsing rules implemented according to the specification provided:
 """
 
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, TYPE_CHECKING
 
 import pandas as pd
+
+if TYPE_CHECKING:
+    from .models import RawRecord
 
 # ---------------------------------------------------------------------------
 # Column metadata
@@ -66,13 +70,7 @@ def _coerce_dtypes(frame: pd.DataFrame) -> pd.DataFrame:
 
     for col in BOOL_FIELDS:
         if col in frame.columns:
-            frame[col] = (
-                frame[col]
-                .astype(str)
-                .str.strip()
-                .str.lower()
-                .map(BOOL_MAP)
-            )
+            frame[col] = frame[col].astype(str).str.strip().str.lower().map(BOOL_MAP)
     for col in INT_FIELDS:
         if col in frame.columns:
             frame[col] = pd.to_numeric(frame[col], errors="coerce").astype("Int64")
@@ -82,24 +80,53 @@ def _coerce_dtypes(frame: pd.DataFrame) -> pd.DataFrame:
     return frame
 
 
-def _replace_nan_with_none(records: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Convert any ``NaN`` values in records into ``None``."""
+def _frame_to_records(
+    frame: pd.DataFrame, original: pd.DataFrame
+) -> list[dict[str, Any]]:
+    """Convert ``frame`` to records and flag invalidly typed values.
 
-    cleaned: list[dict[str, Any]] = []
-    for rec in records:
-        row: dict[str, Any] = {}
-        for key, value in rec.items():
-            if isinstance(value, pd._libs.missing.NAType) or pd.isna(value):
-                row[key] = None
+    ``original`` should contain the raw, uncoerced values so that any fields
+    which failed type coercion can be preserved as strings and marked as
+    invalid. The returned dictionaries include an ``"_invalid"`` key listing the
+    column names where coercion was unsuccessful.
+    """
+
+    records: list[dict[str, Any]] = []
+    typed_cols = BOOL_FIELDS | INT_FIELDS | FLOAT_FIELDS
+    for idx in range(len(frame)):
+        rec: dict[str, Any] = {}
+        invalid: list[str] = []
+        for col in frame.columns:
+            val = frame.iloc[idx][col]
+            orig_val = original.iloc[idx][col]
+            if col in typed_cols:
+                if pd.isna(val) and pd.notna(orig_val):
+                    rec[col] = str(orig_val)
+                    invalid.append(col)
+                else:
+                    if pd.isna(val):
+                        rec[col] = None
+                    elif hasattr(val, "item"):
+                        rec[col] = val.item()
+                    else:
+                        rec[col] = val
             else:
-                row[key] = value
-        cleaned.append(row)
-    return cleaned
+                if pd.isna(val):
+                    rec[col] = None
+                elif hasattr(val, "item"):
+                    rec[col] = val.item()
+                else:
+                    rec[col] = val
+        if invalid:
+            rec["_invalid"] = invalid
+        records.append(rec)
+    return records
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def load_metaanalysis_xlsx(path: str | Path) -> list[dict[str, Any]]:
     """Load the given XLSX file and return a list of row dictionaries.
@@ -120,7 +147,30 @@ def load_metaanalysis_xlsx(path: str | Path) -> list[dict[str, Any]]:
     # Normalise header names by stripping whitespace
     frame.columns = [c.strip() for c in frame.columns]
     frame = _normalise_empty(frame)
+    original = frame.copy()
     frame = _coerce_dtypes(frame)
-    # Convert to list of dictionaries and replace NaN with None
-    records = frame.to_dict(orient="records")
-    return _replace_nan_with_none(records)
+    return _frame_to_records(frame, original)
+
+
+def import_metaanalysis_xlsx(path: str | Path) -> list["RawRecord"]:
+    """Parse the XLSX file and store rows in the database.
+
+    Parameters
+    ----------
+    path:
+        Path to the workbook.
+
+    Returns
+    -------
+    list[RawRecord]
+        Database objects created from the parsed rows.
+    """
+
+    from .extensions import db
+    from .models import RawRecord
+
+    records = load_metaanalysis_xlsx(path)
+    objects = [RawRecord(data=rec) for rec in records]
+    db.session.add_all(objects)
+    db.session.commit()
+    return objects
