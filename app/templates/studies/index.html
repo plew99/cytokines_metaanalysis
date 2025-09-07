@@ -12,7 +12,11 @@
       {% if study.groups %}
         <ul class="mt-2 mb-0">
         {% for group in study.groups %}
-          <li>{{ group.data.get('Group description (MCI / DCM / Healthy / …)') or 'Brak opisu' }}</li>
+          <li>
+            <a href="{{ url_for('core.study_group_detail', study_id=study.id, group_id=group.id) }}">
+              {{ group.data.get('Group description (MCI / DCM / Healthy / …)') or 'Brak opisu' }}
+            </a>
+          </li>
         {% endfor %}
         </ul>
       {% else %}
