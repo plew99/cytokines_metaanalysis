@@ -1,4 +1,7 @@
-"""Database models for the application."""
+"""Database models and import utilities for the application."""
+
+import csv
+from typing import List
 
 from flask_sqlalchemy import SQLAlchemy
 
@@ -65,3 +68,86 @@ class Cohort(db.Model):
     study = db.relationship(
         "Study", backref=db.backref("cohorts", cascade="all, delete-orphan")
     )
+
+
+def _parse_bool(value: str | None) -> bool | None:
+    """Convert common textual truthy/falsey values to bool.
+
+    Empty strings return ``None`` so that SQLAlchemy stores ``NULL``.
+    """
+
+    if value is None or value == "":
+        return None
+    return value.strip().lower() in {"1", "true", "t", "yes", "y"}
+
+
+def import_studies_from_csv(path: str) -> List[Study]:
+    """Import studies from a CSV file.
+
+    The CSV must include all :class:`Study` columns except the auto-increment
+    ``id``. Each row is converted into a :class:`Study` instance and written to
+    the database. The function returns the list of created objects.
+    """
+
+    created: List[Study] = []
+    with open(path, newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            row.pop("id", None)
+            if row.get("publication_year"):
+                row["publication_year"] = int(row["publication_year"])
+            study = Study(**row)
+            db.session.add(study)
+            created.append(study)
+    db.session.commit()
+    return created
+
+
+def import_cohorts_from_csv(path: str) -> List[Cohort]:
+    """Import cohorts from a CSV file.
+
+    The CSV should contain all :class:`Cohort` columns except ``cohort_id``.
+    Numeric and boolean columns are converted from strings when possible. The
+    function returns the list of created objects.
+    """
+
+    created: List[Cohort] = []
+    int_fields = {"sample_size"}
+    float_fields = {
+        "age_central_value",
+        "age_dispersion_value",
+        "percent_male",
+        "lvef_percent_central",
+        "lvef_percent_dispersion",
+        "lvedd_central",
+        "lvedd_dispersion",
+        "emb_lymphocyte_density_per_mm2",
+    }
+    bool_fields = {
+        "inflammation_excluded_by_emb",
+        "cad_excluded",
+        "emb_performed",
+        "cmr_performed",
+    }
+
+    with open(path, newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            row.pop("cohort_id", None)
+            row.pop("id", None)
+
+            for field in int_fields:
+                if row.get(field):
+                    row[field] = int(row[field])
+            for field in float_fields:
+                if row.get(field):
+                    row[field] = float(row[field])
+            for field in bool_fields:
+                row[field] = _parse_bool(row.get(field))
+
+            cohort = Cohort(**row)
+            db.session.add(cohort)
+            created.append(cohort)
+
+    db.session.commit()
+    return created
