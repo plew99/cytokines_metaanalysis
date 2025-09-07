@@ -37,6 +37,7 @@ class Study(db.Model):
     outcomes: Mapped[list["Outcome"]] = relationship(back_populates="study")
     effects: Mapped[list["Effect"]] = relationship(back_populates="study")
     covariates: Mapped[list["Covariate"]] = relationship(back_populates="study")
+    groups: Mapped[list["StudyGroup"]] = relationship(back_populates="study")
     tags: Mapped[list["Tag"]] = relationship(
         secondary="study_tag", back_populates="studies"
     )
@@ -124,6 +125,18 @@ class Covariate(db.Model):
     value: Mapped[str | None] = mapped_column(db.String(255))
 
     study: Mapped[Study] = relationship(back_populates="covariates")
+
+
+class StudyGroup(db.Model):
+    """Unique population within a study."""
+
+    __tablename__ = "study_group"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    study_id: Mapped[int] = mapped_column(db.ForeignKey("study.id"), index=True)
+    data: Mapped[dict[str, Any]] = mapped_column(db.JSON, nullable=False)
+
+    study: Mapped[Study] = relationship(back_populates="groups")
 
 
 study_tag = db.Table(

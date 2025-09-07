@@ -9,7 +9,16 @@ import click
 import pandas as pd
 
 from .extensions import db
-from .models import Arm, Covariate, Effect, Outcome, RawRecord, Study, Tag
+from .models import (
+    Arm,
+    Covariate,
+    Effect,
+    Outcome,
+    RawRecord,
+    Study,
+    StudyGroup,
+    Tag,
+)
 from .xlsx_parser import load_metaanalysis_xlsx
 
 # Mapping of sheet names to models and required fields
@@ -21,6 +30,21 @@ SHEET_MAP: dict[str, tuple[type, list[str]]] = {
     "Covariates": (Covariate, ["study_id", "name"]),
     "Tags": (Tag, ["study_id", "name"]),
 }
+
+GROUP_FIELDS: list[str] = [
+    "n",
+    "Age (mean / median)",
+    "Age (SD / IQR)",
+    "Age mean-SD / median-IQR",
+    "% Males",
+    "Ethicity",
+    "Group description (MCI / DCM / Healthy / …)",
+    "Other important group infomation",
+    "Inflammation excluded by EMB",
+    "CAD excluded",
+    "Other possible causes of MCI / DCM (drugs, SARS-CoV-2…)",
+    "Description of disease comfirmation",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -266,3 +290,37 @@ def init_app(app) -> None:
         db.session.add_all(objects)
         db.session.commit()
         click.echo(f"Created {len(objects)} studies from raw records.")
+
+    @app.cli.command("raw-to-groups")
+    @click.option("--replace", is_flag=True, help="Clear existing study groups before creation")
+    def raw_to_groups_cmd(replace: bool) -> None:
+        """Create :class:`StudyGroup` objects from raw records."""
+
+        db.create_all()
+        if replace:
+            db.session.query(StudyGroup).delete()
+
+        records = RawRecord.query.all()
+        seen: set[tuple[int, tuple[tuple[str, Any], ...]]] = set()
+        created = 0
+        for rec in records:
+            data = rec.data
+            study = Study.query.filter_by(title=data.get("ID")).first()
+            if not study:
+                continue
+            group_data = {field: data.get(field) for field in GROUP_FIELDS}
+            key = (study.id, tuple((f, group_data.get(f)) for f in GROUP_FIELDS))
+            if key in seen:
+                continue
+            seen.add(key)
+            group = StudyGroup(study_id=study.id, data=group_data)
+            db.session.add(group)
+            created += 1
+
+        if created == 0:
+            db.session.commit()
+            click.echo("No study groups created from raw records.")
+            return
+
+        db.session.commit()
+        click.echo(f"Created {created} study groups from raw records.")
