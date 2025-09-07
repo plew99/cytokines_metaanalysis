@@ -241,12 +241,14 @@ def init_app(app) -> None:
             db.session.query(Study).delete()
 
         records = RawRecord.query.all()
+        seen: set[str] = set()
         objects: list[Study] = []
         for rec in records:
             data = rec.data
             title = data.get("ID") or f"{data.get('First author', 'Unknown')} {data.get('Year', '')}".strip()
-            if Study.query.filter_by(title=title).first():
+            if title in seen or Study.query.filter_by(title=title).first():
                 continue
+            seen.add(title)
             study = Study(
                 title=title,
                 year=data.get("Year"),
