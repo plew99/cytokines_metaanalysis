@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Command line utilities for importing data from spreadsheets."""
 
 from collections import defaultdict
@@ -98,14 +96,19 @@ def _import_data(frames: dict[str, pd.DataFrame], dry_run: bool, replace: bool) 
 
     for sheet, (model, required) in SHEET_MAP.items():
         if sheet not in frames:
+            click.echo(f"Skipping missing sheet: {sheet}")
             continue
+        click.echo(f"Processing sheet '{sheet}' ({len(frames[sheet])} rows)")
         records, errs = _load_sheet(frames[sheet], required, sheet)
+        click.echo(f" -> {len(records)} valid rows, {len(errs)} errors")
         errors.extend(errs)
         if errs:
             continue
         if model is Tag:
             for rec in records:
-                study = cache[Study].get(rec["study_id"]) or Study.query.get(rec["study_id"])
+                study = cache[Study].get(rec["study_id"]) or Study.query.get(
+                    rec["study_id"]
+                )
                 if not study:
                     errors.append(
                         {
@@ -130,7 +133,7 @@ def _import_data(frames: dict[str, pd.DataFrame], dry_run: bool, replace: bool) 
 
     if errors:
         path = _write_error_report(errors)
-        click.echo(f"Validation errors found. Report saved to {path}")
+        click.echo(f"{len(errors)} validation errors found. Report saved to {path}")
         db.session.rollback()
         return
 
@@ -146,7 +149,7 @@ def _import_data(frames: dict[str, pd.DataFrame], dry_run: bool, replace: bool) 
 
     db.session.add_all(objects)
     db.session.commit()
-    click.echo("Import completed successfully.")
+    click.echo(f"Import completed successfully. Imported {len(objects)} objects.")
 
 
 # ---------------------------------------------------------------------------
@@ -164,13 +167,26 @@ def init_app(app) -> None:
     def import_xlsx_cmd(path: str, dry_run: bool, replace: bool) -> None:
         """Import data from an XLSX workbook."""
         xls = pd.ExcelFile(path)
+        click.echo(f"Workbook contains sheets: {', '.join(xls.sheet_names)}")
         # Match sheet names case-insensitively to be tolerant of user provided workbooks
         sheet_lookup = {name.strip().lower(): name for name in xls.sheet_names}
         frames: dict[str, pd.DataFrame] = {}
         for sheet in SHEET_MAP:
             key = sheet.strip().lower()
             if key in sheet_lookup:
-                frames[sheet] = xls.parse(sheet_lookup[key])
+                frame = xls.parse(sheet_lookup[key])
+                frames[sheet] = frame
+                click.echo(
+                    f"Loaded sheet '{sheet_lookup[key]}' as '{sheet}' with {len(frame)} rows"
+                )
+            else:
+                click.echo(f"Expected sheet '{sheet}' not found in workbook")
+        if not frames:
+            click.echo(
+                "No recognized sheets found. Expected one of: "
+                + ", ".join(SHEET_MAP.keys())
+            )
+            return
         _import_data(frames, dry_run, replace)
 
     @app.cli.command("import-csv")
