@@ -1,10 +1,13 @@
 """Application factory for Flask app."""
+
 import os
 from pathlib import Path
 from flask import Flask
 from dotenv import load_dotenv
 
 from .config import get_config
+from .models import db
+
 
 def create_app():
     """Application factory pattern."""
@@ -16,9 +19,14 @@ def create_app():
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
 
     app.config.from_object(get_config(env))
+    db_path = Path(app.instance_path) / "app.db"
+    app.config.setdefault("SQLALCHEMY_DATABASE_URI", f"sqlite:///{db_path}")
+    app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
+    db.init_app(app)
 
     # Blueprints
     from .blueprints.core import bp as core_bp
+
     app.register_blueprint(core_bp)
 
     # Simple healthcheck
@@ -26,5 +34,7 @@ def create_app():
     def healthz():
         return {"status": "ok"}, 200
 
-    return app
+    with app.app_context():
+        db.create_all()
 
+    return app
