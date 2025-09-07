@@ -5,7 +5,18 @@
   <ul class="list-group">
   {% for study in studies %}
     <li class="list-group-item">
-      {{ study.title }} - {{ study.authors_text }} et al.{% if study.year %} ({{ study.year }}){% endif %}
+      <div class="bg-light fw-bold p-2">
+        {{ study.title }} - {{ study.authors_text }} et al.{% if study.year %} ({{ study.year }}){% endif %}
+      </div>
+      {% if study.groups %}
+        <ul class="mt-2 mb-0">
+        {% for group in study.groups %}
+          <li>{{ group.data.get('Group description (MCI / DCM / Healthy / …)') or 'Brak opisu' }}</li>
+        {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted mb-0 mt-2">Brak zidentyfikowanych grup</p>
+      {% endif %}
     </li>
   {% else %}
     <li class="list-group-item text-muted">Brak badań</li>
