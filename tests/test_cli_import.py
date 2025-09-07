@@ -7,7 +7,6 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 os.environ["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
 
 from app import create_app
-from app.extensions import db
 from app.models import RawRecord
 from test_xlsx_parser import _create_sample_xlsx
 
@@ -20,7 +19,6 @@ def test_cli_import_handles_arkusz1(tmp_path):
     app.config.update(TESTING=True)
     runner = app.test_cli_runner()
     with app.app_context():
-        db.create_all()
         result = runner.invoke(args=["import-xlsx", str(xlsx_path)])
         assert result.exit_code == 0
         assert "Loaded sheet 'Arkusz1' with 2 rows" in result.output

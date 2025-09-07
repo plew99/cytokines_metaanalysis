@@ -167,6 +167,9 @@ def init_app(app) -> None:
     @click.option("--replace", is_flag=True, help="Clear existing data before import")
     def import_xlsx_cmd(path: str, dry_run: bool, replace: bool) -> None:
         """Import data from an XLSX workbook."""
+        # Ensure all tables exist before attempting to import any data
+        db.create_all()
+
         xls = pd.ExcelFile(path)
         click.echo(f"Workbook contains sheets: {', '.join(xls.sheet_names)}")
         # Match sheet names case-insensitively to be tolerant of user provided workbooks
@@ -217,6 +220,9 @@ def init_app(app) -> None:
     @click.option("--replace", is_flag=True, help="Clear existing data before import")
     def import_csv_cmd(folder: str, dry_run: bool, replace: bool) -> None:
         """Import data from a folder of CSV files."""
+        # Ensure tables exist before reading CSV files
+        db.create_all()
+
         folder_path = Path(folder)
         frames: dict[str, pd.DataFrame] = {}
         for sheet in SHEET_MAP:
