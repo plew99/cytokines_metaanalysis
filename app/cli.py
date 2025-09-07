@@ -230,3 +230,37 @@ def init_app(app) -> None:
             if csv_path.exists():
                 frames[sheet] = pd.read_csv(csv_path)
         _import_data(frames, dry_run, replace)
+
+    @app.cli.command("raw-to-studies")
+    @click.option("--replace", is_flag=True, help="Clear existing studies before creation")
+    def raw_to_studies_cmd(replace: bool) -> None:
+        """Create :class:`Study` objects from stored :class:`RawRecord` data."""
+
+        db.create_all()
+        if replace:
+            db.session.query(Study).delete()
+
+        records = RawRecord.query.all()
+        objects: list[Study] = []
+        for rec in records:
+            data = rec.data
+            title = data.get("ID") or f"{data.get('First author', 'Unknown')} {data.get('Year', '')}".strip()
+            if Study.query.filter_by(title=title).first():
+                continue
+            study = Study(
+                title=title,
+                year=data.get("Year"),
+                country=data.get("Country"),
+                design=data.get("Study type"),
+                authors_text=data.get("First author"),
+                notes=data.get("Important notes"),
+            )
+            objects.append(study)
+
+        if not objects:
+            click.echo("No studies created from raw records.")
+            return
+
+        db.session.add_all(objects)
+        db.session.commit()
+        click.echo(f"Created {len(objects)} studies from raw records.")
