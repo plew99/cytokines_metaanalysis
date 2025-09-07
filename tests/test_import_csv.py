@@ -113,3 +113,23 @@ def test_import_cohorts_handles_blank_summary_type(tmp_path):
         db.session.remove()
         db.drop_all()
         db.engine.dispose()
+
+
+def test_existing_blank_summary_type_in_db(tmp_path):
+    app = setup_app()
+    with app.app_context():
+        db.create_all()
+        study = Study(study_id="T4", first_author="Smith")
+        db.session.add(study)
+        db.session.commit()
+        db.session.execute(
+            Cohort.__table__.insert().values(
+                study_id="T4", cohort_label="Control", lvedd_summary_type=""
+            )
+        )
+        db.session.commit()
+        cohort = Cohort.query.first()
+        assert cohort.lvedd_summary_type is None
+        db.session.remove()
+        db.drop_all()
+        db.engine.dispose()
